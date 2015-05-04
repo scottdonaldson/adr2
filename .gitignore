@@ -1,0 +1,8 @@
+# IMGUR
+
+imgur-upload/node_modules
+imgur-upload/.env
+imgur-upload/npm-debug.log
+imgur-upload/public/lib
+imgur-upload/index.html
+imgur-upload/.sass-cache
