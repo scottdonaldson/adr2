@@ -31,6 +31,8 @@ module.exports = function(app) {
                 });
             }
         }
+
+        res.send('No data received.');
     }
 
     app.get('/upload', postImage);
