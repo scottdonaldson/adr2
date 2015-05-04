@@ -14,6 +14,7 @@
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
+    <script src="js/orbit.js"></script>
     <script src="js/T.js"></script>
 </head>
 <body>
@@ -22,21 +23,83 @@
 
         (function(){
 
-            var radius = 800;
+            var world, camera, controls, scene, renderer;
 
-            window.world = new T();
+            init();
+            render();
 
-            var camera = world.camera,
-                scene = world.scene,
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+            }
+
+            function init() {
+
+                world = new T();
+
+                camera = world.camera;
+                camera.x(-200).y(500).z(500);
+
+                scene = world.scene;
+
                 renderer = world.renderer;
+                renderer.setClearColor('#f2e8e8');
 
-            camera.y(200);
+                controls = new THREE.OrbitControls( camera, renderer.domElement );
+                controls.damping = 0.5;
+    			controls.addEventListener( 'change', render );
 
-            var cubeGeometry = Box(100, 50, 100),
-                cubeMaterial = Material(),
-                cube = world.mesh(cubeGeometry, cubeMaterial);
+                // CUBE
+                var cubeGeometry = Box(100, 50, 100),
+                    cubeMaterial = Material(),
+                    cube = world.mesh(cubeGeometry, cubeMaterial);
 
-            window.upload = function() {
+                cube.x(110);
+                cube.rotation.z = Math.PI * 35 / 180;
+
+                // CYLINDER
+                var cylinderGeo = Cylinder(40, 40, 200, 40),
+                    cylinder = world.mesh(cylinderGeo);
+
+                cylinder.x(200);
+
+                // PEDESTAL
+                var pedestalGeometry = Box(150, 20, 150),
+                    pedestalMaterial = Material('lambert', '#9b7'),
+                    pedestal = world.mesh(pedestalGeometry, pedestalMaterial);
+
+                // PLANE
+                var planeGeometry = Box(600, 1, 600),
+                    plane = world.mesh(planeGeometry);
+                plane.y(-1);
+
+                var light = world.light('#fff');
+                light.target = cube;
+                light.position.set(100, 250, 200);
+
+                // ----- resize
+                window.addEventListener( 'resize', onWindowResize, false );
+
+                // ----- animate
+                animate();
+            }
+
+            function render() {
+                renderer.render(scene, camera);
+            }
+
+            function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				render();
+
+			}
+
+            function upload() {
                 var url = 'http://gentle-stream-4461.herokuapp.com/upload/',
                     canvas = document.getElementsByTagName('canvas')[0],
                     dataURL = canvas.toDataURL().split(',')[1],
@@ -53,62 +116,6 @@
 
             window.addEventListener('keydown', function(e) {
                 if ( e.keyCode === 32 ) upload();
-            });
-
-            var color = 0;
-            document.body.addEventListener('click', function() {
-                color++;
-                renderer.setClearColor('#' + color + '' + color + '' + color);
-
-            });
-
-            cube.x(110);
-            cube.rotation.z = Math.PI * 35 / 180;
-
-            camera.lookAt(cube.position);
-
-            var cylinderGeo = Cylinder(40, 40, 200, 40),
-                cylinder = world.mesh(cylinderGeo);
-
-            cylinder.x(200);
-
-            var pedestalGeometry = Box(150, 20, 150),
-                pedestalMaterial = Material('lambert', '#9b7'),
-                pedestal = world.mesh(pedestalGeometry, pedestalMaterial);
-
-            function addShape( shape, extrudeSettings, color, x, y, z) {
-
-				var geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
-				world.mesh( geometry );
-			}
-
-            var triangleShape = Shape();
-				triangleShape.moveTo(  300, 0 );
-				triangleShape.lineTo(  240, 0 );
-				triangleShape.lineTo( 270, 60 );
-
-            var extrudeSettings = { amount: 50, bevelEnabled: false };
-
-            var geo = new THREE.ShapeGeometry(triangleShape);
-            var triangle = world.mesh(geo, Material('lambert', { color: '#fe0', side: THREE.DoubleSide }));
-            triangle.position.x = triangle.position.y = triangle.position.z = 0;
-
-            addShape( triangleShape, extrudeSettings, '#88f' );
-
-
-            var planeGeometry = Box(600, 1, 600),
-                plane = world.mesh(planeGeometry);
-            plane.y(-1);
-
-            var light = world.light('#fff');
-            light.target = cube;
-            light.position.set(100, 250, 200);
-
-            world.render(function(t) {
-
-                camera.x(radius * Math.sin(t / 150));
-                camera.z(radius * Math.cos(t / 150));
-                camera.lookAt(plane.position);
             });
 
         })();
