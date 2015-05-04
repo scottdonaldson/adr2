@@ -29,10 +29,12 @@ module.exports = function(app) {
                 }).catch(function(err) {
                     console.error(err.message);
                 });
+            } else {
+                res.send('No data received.');
             }
+        } else {
+            res.send('No data received.');
         }
-
-        res.send('No data received.');
     }
 
     app.get('/upload', postImage);

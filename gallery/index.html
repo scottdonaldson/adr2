@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ADR2</title>
+    <script src="https://cdn.firebase.com/js/client/2.2.4/firebase.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            position: relative;
+        }
+        html, body { margin: 0; padding: 0; }
+        #content {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 2em auto;
+            width: 80%;
+        }
+        .thumbnail {
+            background-position: 50% 50%;
+            background-size: cover;
+            border: 0.5em solid #fff;
+            flex-basis: 25%;
+            padding-bottom: calc(25% - 1em);
+            transition: 0.333s opacity;
+        }
+
+        @media screen and (max-width: 800px) {
+            .thumbnail {
+                flex-basis: 33.333%;
+                padding-bottom: calc(33.333% - 1em);
+            }
+        }
+
+        @media screen and (max-width: 600px) {
+            .thumbnail {
+                flex-basis: 50%;
+                padding-bottom: calc(50% - 1em);
+            }
+        }
+
+        @media screen and (max-width: 500px) {
+            .thumbnail {
+                flex-basis: 100%;
+                padding-bottom: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="content"></div>
+
+    <script>
+        var f = new Firebase('https://adr2.firebaseio.com/'),
+            content = document.getElementById('content');
+
+        f.on('child_added', function(data) {
+
+            var item = data.val(),
+                div = document.createElement('div'),
+                img = document.createElement('img');
+
+            img.src = item.url;
+            img.onload = function() {
+                div.style.opacity = 1;
+            };
+
+            div.style.backgroundImage = 'url(' + item.url + ')';
+            div.style.opacity = 0;
+            div.classList.add('thumbnail');
+
+            // prepend new elements
+            if ( content.children.length === 0 ) {
+                content.appendChild(div);
+            } else {
+                content.insertBefore(div, content.firstChild);
+            }
+
+        });
+    </script>
+</body>
+</html>
