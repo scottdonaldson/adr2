@@ -129,7 +129,7 @@ T.prototype.light = function(color, intensity, shadows) {
     var light = new THREE.DirectionalLight(color || '#fff', intensity || 1);
     if ( shadows !== false ) {
         light.castShadow = true;
-        light.shadowMapWidth = light.shadowMapHeight = 1024;
+        light.shadowMapWidth = light.shadowMapHeight = 2048;
     }
     this.scene.add(light);
     return normalize(light);

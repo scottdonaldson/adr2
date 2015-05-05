@@ -16,6 +16,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
     <script src="js/orbit.js"></script>
     <script src="js/T.js"></script>
+    <script src="js/floors.js"></script>
     <script src="js/forms.js"></script>
 
     <script type="x-shader/x-vertex" id="vertexShader">
@@ -72,7 +73,10 @@
                 world = new T();
 
                 camera = world.camera;
-                camera.x(-300).y(750).z(750);
+                //camera.x(200).y(750).z(200).
+                camera.position.x = -1000;
+                camera.position.y = 750;
+                camera.position.z = 500;
 
                 scene = world.scene;
 
@@ -83,60 +87,104 @@
                 controls.damping = 0.5;
     			controls.addEventListener( 'change', render );
 
-                var floorHeight = 20;
-
-                var floorPlan = new THREE.Shape();
-                floorPlan.moveTo(0, 0);
-                floorPlan.lineTo(0, 20);
-                floorPlan.lineTo(-10, 20);
-                floorPlan.lineTo(-10, 50);
-                floorPlan.lineTo(0, 50);
-                floorPlan.lineTo(0, 70);
-                floorPlan.lineTo(70, 70);
-                floorPlan.lineTo(70, 0);
-                floorPlan.lineTo(0, 0);
-                var floorGeo = new THREE.ExtrudeGeometry(floorPlan, {
-                    amount: floorHeight,
-                    bevelSegments: 0
+                var floorOffset = 0;
+                var floorMaterial = new THREE.MeshLambertMaterial({
+                    color: '#ddd'
                 });
-                var floor = world.mesh(floorGeo, Material('lambert', '#555'));
+
+                floors.forEach(function(floor, i) {
+
+                    var floorPlan = new THREE.Shape(),
+                        floorGeo,
+                        floorMesh;
+
+                    // start it up
+                    floorPlan.moveTo(floor.vertices[0][0], floor.vertices[0][1]);
+
+                    floor.vertices.forEach(function(pt, j) {
+
+                        if ( j > 0 ) floorPlan.lineTo(pt[0], pt[1]);
+
+                    });
+
+                    // close it off
+                    floorPlan.lineTo(floor.vertices[0][0], floor.vertices[0][1]);
+
+                    floorGeo = new THREE.ExtrudeGeometry(floorPlan, {
+                        amount: floor.height,
+                        bevelSegments: 0
+                    });
+
+                    if ( i > 0 ) floorOffset += floors[i - 1].height;
+
+                    floorMesh = world.mesh(floorGeo, floorMaterial);
+
+                    floorMesh.rotation.x = -Math.PI / 2;
+                    floorMesh.position.y = floorOffset - 1;
+                });
 
 
-                floor.rotation.x = Math.PI / 2;
-                floor.position.y = floorHeight / 2;
-                //floor.position.z = 300;
-
+                // Other building 1
+                var building1 = [],
+                    building1ExtensionHeight = 200;
 
                 // short 'n' squat
-                var building = Building.call(world, {
+                var building1Coords = {
+                    x: 300,
+                    z: -200
+                }
+                building1.push(Building.call(world, {
                     width: 200,
                     height: 100,
                     depth: 100,
-                    x: 300,
+                    x: building1Coords.x,
+                    z: building1Coords.z,
                     color: '#ccc'
-                });
+                }));
                 // tall extension
-                Building.call(world, {
-                    x: 350,
-                    z: 100,
+                building1.push(Building.call(world, {
+                    x: building1Coords.x + 50,
+                    z: building1Coords.z + 100,
                     width: 100,
-                    height: 200,
+                    height: building1ExtensionHeight,
                     depth: 100,
                     color: '#ccc'
-                });
+                }));
                 // cap the tall one off
-                var cap = world.mesh(Box(108, 12, 108), Material('lambert', '#ccc'));
-                cap.x(350).y(204).z(100)
+                var building1Part3 = world.mesh(Box(108, 12, 108), Material('lambert', '#ccc'));
+                building1Part3.x(building1Coords.x + 50).y(building1ExtensionHeight + 4).z(building1Coords.z + 100);
+                building1.push(building1Part3);
+
+                function rotateAroundYAxis(obj, deg) {
+
+                    var x = obj.position.x,
+                        z = obj.position.z,
+                        hypotenuse = Math.sqrt(x * x + z * z);
+
+                    var curAngle = Math.atan( x / z ) * 180 / Math.PI,
+                        newAngle = curAngle + deg;
+
+                    newAngle = newAngle * Math.PI / 180;
+
+                    obj.position.x = hypotenuse * Math.sin(newAngle);
+                    obj.position.z = hypotenuse * Math.cos(newAngle);
+                    obj.rotation.y += deg * Math.PI / 180;
+                }
+
+                building1.forEach(function(part) {
+                    rotateAroundYAxis(part, 210);
+                });
+
 
                 // GROUND PLANE
                 var plane = world.mesh(Box(100000, 1, 100000), Material('lambert', '#999')).y(-1);
 
                 var light = world.light();
-                light.target = building;
+                light.target = building1[0];
                 light.position.set(1000, 2500, 2000);
 
                 var light2 = world.light('#fff', 0.5, false);
-                light2.target = building;
+                light2.target = building1[0];
                 light2.position.set(-2000, 2500, -1000);
 
                 var hemiLight = new THREE.HemisphereLight( '#57f', '#000', 0.15 );
@@ -190,10 +238,9 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
 				render();
-
 			}
 
-            function upload() {
+            function uploadSnapshot() {
                 var url = 'http://gentle-stream-4461.herokuapp.com/upload/',
                     canvas = document.getElementsByTagName('canvas')[0],
                     dataURL = canvas.toDataURL().split(',')[1],
@@ -209,7 +256,7 @@
             };
 
             window.addEventListener('keydown', function(e) {
-                if ( e.keyCode === 32 ) upload();
+                if ( e.keyCode === 32 ) uploadSnapshot();
             });
 
         })();

@@ -4,7 +4,7 @@
 
     	var canvas = document.createElement( 'canvas' );
     	canvas.width = 32;
-    	canvas.height = height;
+    	canvas.height = height || 100;
 
     	var context = canvas.getContext( '2d' );
     	context.fillStyle = '#ffffff';
@@ -92,6 +92,30 @@
         this.scene.add(cube);
 
         return cube;
+    }
+
+    Building.generateTexture = generateTexture;
+
+    Texture = function(color) {
+        var canvas = document.createElement( 'canvas' );
+    	canvas.width = 32;
+    	canvas.height = 32;
+
+    	var context = canvas.getContext( '2d' );
+    	context.fillStyle = color || '#f00';
+    	context.fillRect( 0, 0, 32, 32 );
+
+    	var canvas2 = document.createElement( 'canvas' );
+    	canvas2.width = 32;
+    	canvas2.height = 32;
+
+    	var context = canvas2.getContext( '2d' );
+    	context.imageSmoothingEnabled = false;
+    	context.drawImage( canvas, 0, 0, canvas2.width, canvas2.height );
+
+    	// return canvas2;
+
+        return new THREE.Texture(canvas2);
     }
 
 })();

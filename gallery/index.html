@@ -17,13 +17,76 @@
             margin: 2em auto;
             width: 80%;
         }
+
+        #modal {
+            display: none;
+        }
+
+        #modal:after {
+            display: block;
+            content: '✖';
+            cursor: pointer;
+            font-size: 1.5em;
+            padding: 0.5em;
+            position: absolute;
+            top: 0;
+            transition: 0.2s color;
+            right: 0;
+        }
+
+        .modal-active #modal {
+            background: #fff;
+            box-shadow: 0 0 3em rgba(0, 0, 0, 0.3);
+            display: block;
+            width: calc(100% - 5em);
+            height: calc(100% - 5em);
+            padding: 2em;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translateX(-50%) translateY(-50%);
+        }
+
+        #modal img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            left: 50%;
+            top: 50%;
+            transform: translateX(-50%) translateY(-50%);
+        }
+
+        #modal-shadow {
+            background: #fff;
+            display: none;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            transition: 0.2s background, 0.2s opacity;
+        }
+
+        .modal-active #modal-shadow {
+            display: block;
+            opacity: 0.25;
+            background: #000;
+        }
+
         .thumbnail {
             background-position: 50% 50%;
             background-size: cover;
             border: 0.5em solid #fff;
+            cursor: pointer;
             flex-basis: 25%;
             padding-bottom: calc(25% - 1em);
-            transition: 0.333s opacity;
+            transition: 0.333s opacity, 0.2s filter, 0.2s -webkit-filter;
+        }
+
+        .thumbnail:hover {
+            filter: brightness(1.25) blur(2px);
+            -webkit-filter: brightness(1.25) blur(2px);
         }
 
         @media screen and (max-width: 800px) {
@@ -50,8 +113,29 @@
 </head>
 <body>
     <div id="content"></div>
-
+    <div id="modal-shadow"></div>
+    <div id="modal"></div>
     <script>
+        var modal = document.getElementById('modal'),
+            modalShadow = document.getElementById('modal-shadow');
+
+        function showModal() {
+            var img = document.createElement('img');
+            img.src = this.style.backgroundImage.replace('url(', '').replace(')', '');
+            modal.innerHTML = '';
+            modal.appendChild(img);
+            document.body.classList.add('modal-active');
+        }
+
+        function closeModal() {
+            document.body.classList.remove('modal-active');
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if (e.keyCode === 27) closeModal();
+        })
+        modal.addEventListener('click', closeModal);
+
         var f = new Firebase('https://adr2.firebaseio.com/'),
             content = document.getElementById('content');
 
@@ -76,6 +160,8 @@
             } else {
                 content.insertBefore(div, content.firstChild);
             }
+
+            div.addEventListener('click', showModal);
 
         });
     </script>
