@@ -16,6 +16,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r71/three.min.js"></script>
     <script src="js/orbit.js"></script>
     <script src="js/T.js"></script>
+    <script src="js/forms.js"></script>
+
+    <script type="x-shader/x-vertex" id="vertexShader">
+
+		varying vec3 vWorldPosition;
+
+		void main() {
+
+			vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+			vWorldPosition = worldPosition.xyz;
+
+			gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+		}
+
+	</script>
+
+	<script type="x-shader/x-fragment" id="fragmentShader">
+
+		uniform vec3 topColor;
+		uniform vec3 bottomColor;
+		uniform float offset;
+		uniform float exponent;
+
+		varying vec3 vWorldPosition;
+
+		void main() {
+
+			float h = normalize( vWorldPosition + offset ).y;
+			gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h, 0.0 ), exponent ), 0.0 ) ), 1.0 );
+
+		}
+
+	</script>
 </head>
 <body>
     <div id="container"></div>
@@ -38,7 +72,7 @@
                 world = new T();
 
                 camera = world.camera;
-                camera.x(-200).y(500).z(500);
+                camera.x(-300).y(750).z(750);
 
                 scene = world.scene;
 
@@ -49,33 +83,93 @@
                 controls.damping = 0.5;
     			controls.addEventListener( 'change', render );
 
-                // CUBE
-                var cubeGeometry = Box(100, 50, 100),
-                    cubeMaterial = Material(),
-                    cube = world.mesh(cubeGeometry, cubeMaterial);
+                var floorHeight = 20;
 
-                cube.x(110);
-                cube.rotation.z = Math.PI * 35 / 180;
+                var floorPlan = new THREE.Shape();
+                floorPlan.moveTo(0, 0);
+                floorPlan.lineTo(0, 20);
+                floorPlan.lineTo(-10, 20);
+                floorPlan.lineTo(-10, 50);
+                floorPlan.lineTo(0, 50);
+                floorPlan.lineTo(0, 70);
+                floorPlan.lineTo(70, 70);
+                floorPlan.lineTo(70, 0);
+                floorPlan.lineTo(0, 0);
+                var floorGeo = new THREE.ExtrudeGeometry(floorPlan, {
+                    amount: floorHeight,
+                    bevelSegments: 0
+                });
+                var floor = world.mesh(floorGeo, Material('lambert', '#555'));
 
-                // CYLINDER
-                var cylinderGeo = Cylinder(40, 40, 200, 40),
-                    cylinder = world.mesh(cylinderGeo);
 
-                cylinder.x(200);
+                floor.rotation.x = Math.PI / 2;
+                floor.position.y = floorHeight / 2;
+                //floor.position.z = 300;
 
-                // PEDESTAL
-                var pedestalGeometry = Box(150, 20, 150),
-                    pedestalMaterial = Material('lambert', '#9b7'),
-                    pedestal = world.mesh(pedestalGeometry, pedestalMaterial);
 
-                // PLANE
-                var planeGeometry = Box(600, 1, 600),
-                    plane = world.mesh(planeGeometry);
-                plane.y(-1);
+                // short 'n' squat
+                var building = Building.call(world, {
+                    width: 200,
+                    height: 100,
+                    depth: 100,
+                    x: 300,
+                    color: '#ccc'
+                });
+                // tall extension
+                Building.call(world, {
+                    x: 350,
+                    z: 100,
+                    width: 100,
+                    height: 200,
+                    depth: 100,
+                    color: '#ccc'
+                });
+                // cap the tall one off
+                var cap = world.mesh(Box(108, 12, 108), Material('lambert', '#ccc'));
+                cap.x(350).y(204).z(100)
 
-                var light = world.light('#fff');
-                light.target = cube;
-                light.position.set(100, 250, 200);
+                // GROUND PLANE
+                var plane = world.mesh(Box(100000, 1, 100000), Material('lambert', '#999')).y(-1);
+
+                var light = world.light();
+                light.target = building;
+                light.position.set(1000, 2500, 2000);
+
+                var light2 = world.light('#fff', 0.5, false);
+                light2.target = building;
+                light2.position.set(-2000, 2500, -1000);
+
+                var hemiLight = new THREE.HemisphereLight( '#57f', '#000', 0.15 );
+
+                hemiLight.position.x = -200;
+				hemiLight.position.y = 500;
+				scene.add( hemiLight );
+
+                // SKYDOME
+				var vertexShader = document.getElementById( 'vertexShader' ).textContent,
+                    fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
+
+				var uniforms = {
+					topColor: 	 { type: "c", value: new THREE.Color( 0x0077ff ) },
+					bottomColor: { type: "c", value: new THREE.Color( '#f2e8e8' ) },
+					offset:		 { type: "f", value: 400 },
+					exponent:	 { type: "f", value: 0.6 }
+				}
+				uniforms.topColor.value.copy( hemiLight.color );
+
+                scene.fog = new THREE.Fog( 0xffffff, 1000, 20000 );
+				scene.fog.color.copy( uniforms.bottomColor.value );
+
+				var skyGeo = new THREE.SphereGeometry( 20000, 32, 15 );
+				var skyMat = new THREE.ShaderMaterial( {
+					uniforms: uniforms,
+					vertexShader: vertexShader,
+					fragmentShader: fragmentShader,
+					side: THREE.BackSide
+				} );
+
+				var sky = new THREE.Mesh( skyGeo, skyMat );
+				scene.add( sky );
 
                 // ----- resize
                 window.addEventListener( 'resize', onWindowResize, false );

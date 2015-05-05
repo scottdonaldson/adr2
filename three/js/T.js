@@ -43,13 +43,13 @@ function shadows(thing) {
 
 function normalize(thing) {
     ['x', 'y', 'z'].forEach(function(d) {
-        var a = d;
         thing[d] = function(n) {
+            var pos;
             if (n) {
-                this.position[a] = n;
+                this.position[d] = n;
                 return this;
             } else {
-                return this.position[a];
+                return this.position[d];
             }
         };
     });
@@ -125,10 +125,12 @@ T.prototype.mesh = function(geo, material) {
     return mesh;
 };
 
-T.prototype.light = function() {
-    var light = new THREE.DirectionalLight('#fff');
-    light.castShadow = true;
-    light.shadowMapWidth = light.shadowMapHeight = 1024;
+T.prototype.light = function(color, intensity, shadows) {
+    var light = new THREE.DirectionalLight(color || '#fff', intensity || 1);
+    if ( shadows !== false ) {
+        light.castShadow = true;
+        light.shadowMapWidth = light.shadowMapHeight = 1024;
+    }
     this.scene.add(light);
     return normalize(light);
 };
