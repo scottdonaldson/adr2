@@ -98,7 +98,16 @@
             var world, camera, controls, scene, renderer;
 
             // going to increment this
-            var light, lightTarget;
+            var light, lightTarget = new THREE.Vector3(0, 0, 0);
+
+            var rollOverMesh, isShiftDown = false, objects = [], gridPlane;
+
+            var uniforms, skyGeo, skyMat, sky;
+
+            function cube(color) {
+                var box = world.mesh(Box(50, 50, 50), Material(color || '#ccc'));
+                return box;
+            }
 
             init();
             render();
@@ -126,205 +135,41 @@
                 controls.damping = 0.5;
     			controls.addEventListener( 'change', render );
 
-                var floorOffset = 0;
+                var rollOverGeo = new THREE.BoxGeometry( 50, 50, 50 );
+				rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0x5555ff, opacity: 0.5, transparent: true } );
+				rollOverMesh = new THREE.Mesh( rollOverGeo, rollOverMaterial );
+                rollOverMesh.position.x = 25;
+                rollOverMesh.position.y = 28;
+                rollOverMesh.position.z = 25;
+				scene.add( rollOverMesh );
 
-                floors.forEach(function(floor, i) {
+                var size = 500, step = 50;
 
-                    var floorPlan = new THREE.Shape(),
-                        floorHole,
-                        floorGeo,
-                        floorMesh;
+				var geometry = new THREE.Geometry();
 
-                    // start it up
-                    floorPlan.moveTo(floor.vertices[0][0], floor.vertices[0][1]);
+				for ( var i = - size; i <= size; i += step ) {
 
-                    floor.vertices.forEach(function(pt, j) {
+					geometry.vertices.push( new THREE.Vector3( - size, 0, i ) );
+					geometry.vertices.push( new THREE.Vector3(   size, 0, i ) );
 
-                        if ( j > 0 ) floorPlan.lineTo(pt[0], pt[1]);
+					geometry.vertices.push( new THREE.Vector3( i, 0, - size ) );
+					geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
 
-                    });
+				}
 
-                    // close it off
-                    floorPlan.lineTo(floor.vertices[0][0], floor.vertices[0][1]);
+				var lineMaterial = new THREE.LineBasicMaterial( { color: 0x000000, transparent: true, fog: true, opacity: 0.5, linewidth: 2 } );
 
-                    if ( floor.hole ) {
-                        floor.hole.forEach(function(pt, j) {
-                            floor.hole[j] = new THREE.Vector2(pt[0], pt[1]);
-                        });
+				var grid = new THREE.Line( geometry, lineMaterial, THREE.LinePieces );
+				scene.add( grid );
+                grid.position.y = 3;
 
-                        floorHole = new THREE.Path(floor.hole);
-
-                        floorPlan.holes.push(floorHole);
-                    }
-
-                    floorGeo = new THREE.ExtrudeGeometry(floorPlan, {
-                        amount: floor.height,
-                        bevelSegments: 0
-                    });
-
-                    if ( i > 0 ) floorOffset += floors[i - 1].height;
-
-                    floorMesh = world.mesh(floorGeo, new THREE.MeshLambertMaterial({
-                        color: '#ddd'
-                    }));
-
-                    floorMesh.rotation.x = -Math.PI / 2;
-                    floorMesh.position.y = floorOffset - 1;
-                });
-
-                function rotateAroundYAxis(obj, deg) {
-
-                    var x = obj.position.x,
-                        z = obj.position.z,
-                        hypotenuse = Math.sqrt(x * x + z * z);
-
-                    var curAngle = Math.atan( x / z ) * 180 / Math.PI,
-                        newAngle = curAngle + deg;
-
-                    newAngle = newAngle * Math.PI / 180;
-
-                    obj.position.x = hypotenuse * Math.sin(newAngle);
-                    obj.position.z = hypotenuse * Math.cos(newAngle);
-                    obj.rotation.y += deg * Math.PI / 180;
-                }
-
-                // Tall building
-                var building1 = [],
-                    building1Height = 400;
-
-                building1.push(Building.call(world, {
-                    width: 200,
-                    height: building1Height,
-                    depth: 100,
-                    x: 300,
-                    z: -200,
-                    color: '#ccc'
-                }));
-
-                building1.forEach(function(part) {
-                    rotateAroundYAxis(part, 210);
-                });
-
-                var citibank = Building.call(world, {
-                    width: 150,
-                    height: 550,
-                    depth: 150,
-                    color: '#ccf',
-                    x: -400,
-                    z: -200
-                });
-                for ( var topper = 0; topper < 5; topper++ ) {
-                    world.mesh(
-                        Box(150 - (topper + 1) * 20, 15, 150 - (topper + 1) * 20),
-                        Material('#bbe')
-                    ).x(-400).y(550 + 7.5 + topper * 15).z(-200).exclude = true;
-                }
-                lightTarget = citibank;
-
-                var cunyFootprint = new THREE.Shape();
-                cunyFootprint.moveTo(100, 100);
-                cunyFootprint.bezierCurveTo(
-                    100, 10,
-                    10, 0,
-                    0, 0
-                );
-                cunyFootprint.lineTo(-20, 0);
-                cunyFootprint.lineTo(-20, 100);
-                cunyFootprint.lineTo(100, 100);
-                var cunyGeo = new THREE.ExtrudeGeometry(cunyFootprint, {
-                    amount: 120,
-                    bevelSegments: 0
-                });
-                var cuny = world.mesh(cunyGeo, Material('#aab'));
-                cuny.exclude = true;
-                cuny.rotation.x = -Math.PI / 2;
-                cuny.position.x = -200;
-                cuny.position.z = -200;
-                cuny.position.y = -1;
-
-                var cuny2 = world.mesh(cunyGeo, Material('#aab'));
-                cuny2.exclude = true;
-                cuny2.scale.x = 0.75;
-                cuny2.scale.y = 0.75;
-                cuny2.scale.z = 0.5;
-                cuny2.rotation.x = -Math.PI / 2;
-                cuny2.position.x = -206;
-                cuny2.position.z = -226;
-                cuny2.position.y = 119;
-
-
-                // Group of neighboring buildings
-                var neighbor = [],
-                    building2Material = Material('#b97'),
-                    building2_1 = world.mesh(
-                        Box(60, 30, 20),
-                        building2Material
-                    ).x(140),
-                    building2_2 = world.mesh(
-                        Box(20, 30, 40),
-                        building2Material
-                    ).x(160).z(-30),
-                    building2_3 = world.mesh(
-                        Box(40, 15, 40),
-                        Material('#666')
-                    ).x(130).z(-30);
-                neighbor.push(building2_1);
-                neighbor.push(building2_2);
-                neighbor.push(building2_3);
-
-                function shapeFromPlan(plan) {
-                    var thePlan = new THREE.Shape();
-                    // start it up
-                    thePlan.moveTo(plan[0][0], plan[0][1]);
-                    plan.forEach(function(pt, j) {
-
-                        if ( j > 0 ) thePlan.lineTo(pt[0], pt[1]);
-
-                    });
-                    // close it off
-                    thePlan.lineTo(plan[0][0], plan[0][1]);
-                    return thePlan;
-                }
-
-                var building3plan = [
-                    [0, 0],
-                    [25, 0],
-                    [25, 40],
-                    [0, 30]
-                ];
-                var building3 = world.mesh(
-                        new THREE.ExtrudeGeometry(shapeFromPlan(building3plan), {
-                            amount: 25,
-                            bevelSegments: 0
-                        }),
-                        Material('#943')
-                    ),
-                    building3Roof = world.mesh(
-                        new THREE.ExtrudeGeometry(shapeFromPlan(building3plan), {
-                            amount: 2,
-                            bevelSegments: 0
-                        }),
-                        Material('#eee')
-                    );
-                building3.position.x = 100;
-                building3Roof.position.x = 100;
-                building3.position.z = -60;
-                building3Roof.position.z = -60;
-                building3.rotation.x = -Math.PI / 2;
-                building3Roof.rotation.x = -Math.PI / 2;
-                building3.position.y = 0;
-                building3Roof.position.y = 24;
-
-                neighbor.push(building3);
-                neighbor.push(building3Roof);
-
-                neighbor.forEach(function(obj) {
-                    obj.position.y -= 1;
-                    obj.exclude = true;
-                });
+                gridPlane = world.mesh(Box(1000, 1, 1000), Material('#bbb'));
+                gridPlane.y(0);
+                objects.push(gridPlane);
+                lightTarget = gridPlane;
 
                 // GROUND PLANE
-                var plane = world.mesh(Box(100000, 1, 100000), Material('lambert', '#777')).y(-1);
+                var plane = world.mesh(Box(100000, 1, 100000), Material('lambert', '#777')).y(-2);
                 plane.exclude = true;
 
                 light = world.light();
@@ -334,40 +179,41 @@
                     lightZ = 2000;
                 light.position.set(lightX, lightY, lightZ);
 
-                var light2 = world.light('#fff', 0.5, false);
+                var light2 = world.light('#fff', 1, false);
                 light2.target = lightTarget;
-                light2.position.set(-2000, 2500, -1000);
+                light2.position.set(2000, 2500, -500);
 
                 var hemiLight = new THREE.HemisphereLight( '#57f', '#000', 0.15 );
 
-                hemiLight.position.x = -200;
+                /* hemiLight.position.x = 400;
 				hemiLight.position.y = 500;
-				scene.add( hemiLight );
+                hemiLight.position.z = -200;
+				scene.add( hemiLight ); */
 
                 // SKYDOME
 				var vertexShader = document.getElementById( 'vertexShader' ).textContent,
                     fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
 
-				var uniforms = {
+				uniforms = {
 					topColor: 	 { type: "c", value: new THREE.Color( 0x0077ff ) },
-					bottomColor: { type: "c", value: new THREE.Color( '#f2e8e8' ) },
+					bottomColor: { type: "c", value: new THREE.Color( '#ccc' ) },
 					offset:		 { type: "f", value: 400 },
 					exponent:	 { type: "f", value: 0.6 }
 				}
 				uniforms.topColor.value.copy( hemiLight.color );
 
-                scene.fog = new THREE.Fog( 0xffffff, 1000, 20000 );
+                scene.fog = new THREE.Fog( '#000', 1000, 20000 );
 				scene.fog.color.copy( uniforms.bottomColor.value );
 
-				var skyGeo = new THREE.SphereGeometry( 20000, 32, 15 );
-				var skyMat = new THREE.ShaderMaterial( {
+				skyGeo = new THREE.SphereGeometry( 20000, 32, 15 );
+				skyMat = new THREE.ShaderMaterial( {
 					uniforms: uniforms,
 					vertexShader: vertexShader,
 					fragmentShader: fragmentShader,
 					side: THREE.BackSide
 				} );
 
-				var sky = new THREE.Mesh( skyGeo, skyMat );
+				sky = new THREE.Mesh( skyGeo, skyMat );
 				scene.add( sky );
 
                 // ----- resize
@@ -407,23 +253,6 @@
                             closestObj = intersect;
                         }
                     });
-
-                    var hypotenuse = Math.sqrt(camera.x() * camera.x() + camera.z() * camera.z());
-
-                    if ( !closestObj.object.exclude ) {
-
-                        var oldColor;
-                        if ( closestObj.object && !closestObj.object.exclude ) {
-                            oldColor = closestObj.object.oldColor || closestObj.object.material.color;
-                            if ( oldColor ) {
-                                closestObj.object.oldColor = oldColor;
-                                closestObj.object.material.color = new THREE.Color( 0.666 * (1 + oldColor.r), 0.666 * (1 + oldColor.g), 0.666 * (1 + oldColor.b) );
-                            }
-                        }
-
-                        closestObj.object.position.x -= camera.x() / hypotenuse;
-                        closestObj.object.position.z -= camera.z() / hypotenuse;
-                    }
                 }
 
                 renderer.render(scene, camera);
@@ -462,20 +291,37 @@
             };
 
             function timeGoesBy() {
-                light.position.z -= 25;
-                light.position.set(light.position.x, light.position.y, light.position.z);
-                light.target = lightTarget;
-                render();
+                if ( light.position.z >= -3400 ) {
+
+                    light.position.z -= 25;
+                    light.position.set(light.position.x, light.position.y, light.position.z);
+                    if ( light.position.z <= 0 ) {
+                        light.color = new THREE.Color( 1, light.color.g - 0.004, light.color.b - 0.01 );
+                    }
+                    light.target = lightTarget;
+
+                    uniforms.topColor.value = new THREE.Color( uniforms.topColor.value.r - 0.01, uniforms.topColor.value.g - 0.01, uniforms.topColor.value.b - 0.01 );
+
+                    sky.material.uniforms = uniforms;
+                    console.log(uniforms.topColor);
+
+                    render();
+                }
             }
 
             window.addEventListener('keydown', function(e) {
                 // enter
                 if ( e.keyCode === 13 ) uploadSnapshot();
+                // shift
+                if ( e.keyCode === 16 ) isShiftDown = true;
                 // space bar
                 if ( e.keyCode === 32 ) timeGoesBy();
             });
 
-
+            window.addEventListener('keyup', function(e) {
+                // shift up
+                if ( e.keyCode === 16 ) isShiftDown = false;
+            });
 
             // ----- RAYCASTER
 
@@ -488,13 +334,93 @@
             	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1
 
                 if ( raycaster ) {
+                    raycaster.setFromCamera( mouse, camera );
 
+    				var intersects = raycaster.intersectObjects( objects );
+
+    				if ( intersects.length > 0 ) {
+
+    					var intersect = intersects[ 0 ];
+    					rollOverMesh.position.copy( intersect.point ).add( intersect.face.normal );
+    					rollOverMesh.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
+                        rollOverMesh.position.y += 3;
+
+    				}
                 }
 
                 render();
             }
 
+            var mouseDownCoords;
+
+            function onMouseDown( event ) {
+
+				event.preventDefault();
+
+				mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+
+                // need to create a new object mapping to mousedown coordinates
+                mouseDownCoords = {
+                    x: mouse.x,
+                    y: mouse.y
+                };
+
+			}
+
+            function randCharFromString(str) {
+                return str[Math.floor(Math.random() * str.length)];
+            }
+
+            function onMouseUp( event ) {
+                mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+
+                if ( mouse.x === mouseDownCoords.x && mouse.y === mouseDownCoords.y ) {
+                    raycaster.setFromCamera( mouse, camera );
+
+    				var intersects = raycaster.intersectObjects( objects );
+
+    				if ( intersects.length > 0 ) {
+
+    					var intersect = intersects[ 0 ];
+
+    					// delete cube
+
+    					if ( isShiftDown ) {
+
+    						if ( intersect.object != gridPlane ) {
+
+    							scene.remove( intersect.object );
+
+    							objects.splice( objects.indexOf( intersect.object ), 1 );
+
+    						}
+
+    					// create cube
+
+    					} else {
+                            var hex = '56789abcdef',
+                                hexVal = randCharFromString(hex);
+                            // restrict to grayscale
+    						var voxel = cube('#' + hexVal + hexVal + hexVal);
+
+    						voxel.position.copy( intersect.point ).add( intersect.face.normal );
+    						voxel.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
+                            voxel.position.y += 3;
+    						scene.add( voxel );
+
+    						objects.push( voxel );
+
+    					}
+
+    					render();
+
+    				}
+                }
+            }
+
             window.addEventListener( 'mousemove', onMouseMove, false );
+            window.addEventListener( 'mousedown', onMouseDown, false );
+            window.addEventListener( 'mouseup', onMouseUp, false );
 
             window.requestAnimationFrame(render);
 
