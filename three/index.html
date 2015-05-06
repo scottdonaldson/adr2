@@ -86,10 +86,12 @@
 <body>
     <div id="container"></div>
     <div id="controls">
+        <div class="monospace">adr2.scottland.cc</div><br>
         <span class="monospace">Left Mouse</span>&nbsp;-&nbsp;Orbit
         <span class="monospace">Right Mouse</span>&nbsp;-&nbsp;Pan
-        <span class="monospace">Enter</span>&nbsp;-&nbsp;Take Screenshot
-        <span class="monospace">Hold Space Bar</span>&nbsp;-&nbsp;Time Goes By
+        <span class="monospace">Enter</span>&nbsp;-&nbsp;Screenshot
+        <span class="monospace">Hold Space Bar</span>&nbsp;-&nbsp;Time&nbsp;Passes
+        <span class="monospace">X</span>&nbsp;-&nbsp;Clear&nbsp;All
     </div>
     <script>
 
@@ -303,9 +305,15 @@
                     uniforms.topColor.value = new THREE.Color( uniforms.topColor.value.r - 0.01, uniforms.topColor.value.g - 0.01, uniforms.topColor.value.b - 0.01 );
 
                     sky.material.uniforms = uniforms;
-                    console.log(uniforms.topColor);
 
                     render();
+                }
+            }
+
+            function clearAll() {
+                // don't remove the ground plane
+                for ( var i = 1; i < objects.length; i++ ) {
+                    scene.remove(objects[i]);
                 }
             }
 
@@ -316,6 +324,8 @@
                 if ( e.keyCode === 16 ) isShiftDown = true;
                 // space bar
                 if ( e.keyCode === 32 ) timeGoesBy();
+                // x
+                if ( e.keyCode === 88 ) clearAll();
             });
 
             window.addEventListener('keyup', function(e) {
