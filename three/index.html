@@ -315,6 +315,7 @@
                 for ( var i = 1; i < objects.length; i++ ) {
                     scene.remove(objects[i]);
                 }
+                objects = objects.splice(1, Infinity)
             }
 
             window.addEventListener('keydown', function(e) {
