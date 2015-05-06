@@ -89,7 +89,7 @@
         <span class="monospace">Left Mouse</span>&nbsp;-&nbsp;Orbit
         <span class="monospace">Right Mouse</span>&nbsp;-&nbsp;Pan
         <span class="monospace">Enter</span>&nbsp;-&nbsp;Take Screenshot
-        <span class="monospace">Space Bar</span>&nbsp;-&nbsp;Time Goes By
+        <span class="monospace">Hold Space Bar</span>&nbsp;-&nbsp;Time Goes By
     </div>
     <script>
 
@@ -185,10 +185,10 @@
 
                 var hemiLight = new THREE.HemisphereLight( '#57f', '#000', 0.15 );
 
-                /* hemiLight.position.x = 400;
+                hemiLight.position.x = 400;
 				hemiLight.position.y = 500;
                 hemiLight.position.z = -200;
-				scene.add( hemiLight ); */
+				scene.add( hemiLight );
 
                 // SKYDOME
 				var vertexShader = document.getElementById( 'vertexShader' ).textContent,
