@@ -2,7 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ADR2</title>
+    <title>ADR2 | Voxels</title>
+
+    <meta property="og:url" content="http://adr2.scottland.cc">
+    <meta property="og:title" content="ADR2 | Voxels">
+    <meta property="og:image" content="http://adr2.scottland.cc/meta-fb.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:creator" content="@scottpdonaldson">
+    <meta name="twitter:title" content="ADR2 | Voxels">
+    <meta name="twitter:image:src" content="http://adr2.scottland.cc/meta-tw.png">
 
     <style>
         html, body { margin: 0; padding: 0; }
@@ -41,6 +52,16 @@
 
         .monospace:first-child {
             padding-left: 0;
+        }
+
+        a, a:visited {
+            color: #77c;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        a:active, a:focus, a:hover {
+            color: #99d;
         }
     </style>
 
@@ -86,7 +107,9 @@
 <body>
     <div id="container"></div>
     <div id="controls">
-        <div class="monospace">adr2.scottland.cc</div><br>
+        <div>
+            <span class="monospace">adr2.scottland.cc</span>&nbsp;/&nbsp;<a href="http://adr2.scottland.cc/gallery" target="_blank" title="Updates Live">Gallery</a>
+        </div><br>
         <span class="monospace">Left Mouse</span>&nbsp;-&nbsp;Orbit
         <span class="monospace">Right Mouse</span>&nbsp;-&nbsp;Pan
         <span class="monospace">Enter</span>&nbsp;-&nbsp;Screenshot
@@ -124,8 +147,8 @@
                 world = new T('container');
 
                 camera = world.camera;
-                camera.position.x = -1000;
-                camera.position.y = 750;
+                camera.position.x = -1200;
+                camera.position.y = 350;
                 camera.position.z = 500;
 
                 scene = world.scene;
