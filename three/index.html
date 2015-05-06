@@ -10,6 +10,11 @@
             position: fixed;
             top: 0;
             left: 0;
+            transition: 0.2s opacity;
+        }
+
+        .faded {
+            opacity: 0;
         }
     </style>
 
@@ -73,7 +78,6 @@
                 world = new T();
 
                 camera = world.camera;
-                //camera.x(200).y(750).z(200).
                 camera.position.x = -1000;
                 camera.position.y = 750;
                 camera.position.z = 500;
@@ -88,13 +92,11 @@
     			controls.addEventListener( 'change', render );
 
                 var floorOffset = 0;
-                var floorMaterial = new THREE.MeshLambertMaterial({
-                    color: '#ddd'
-                });
 
                 floors.forEach(function(floor, i) {
 
                     var floorPlan = new THREE.Shape(),
+                        floorHole,
                         floorGeo,
                         floorMesh;
 
@@ -110,6 +112,16 @@
                     // close it off
                     floorPlan.lineTo(floor.vertices[0][0], floor.vertices[0][1]);
 
+                    if ( floor.hole ) {
+                        floor.hole.forEach(function(pt, j) {
+                            floor.hole[j] = new THREE.Vector2(pt[0], pt[1]);
+                        });
+
+                        floorHole = new THREE.Path(floor.hole);
+
+                        floorPlan.holes.push(floorHole);
+                    }
+
                     floorGeo = new THREE.ExtrudeGeometry(floorPlan, {
                         amount: floor.height,
                         bevelSegments: 0
@@ -117,43 +129,97 @@
 
                     if ( i > 0 ) floorOffset += floors[i - 1].height;
 
-                    floorMesh = world.mesh(floorGeo, floorMaterial);
+                    floorMesh = world.mesh(floorGeo, new THREE.MeshLambertMaterial({
+                        color: '#ddd'
+                    }));
 
                     floorMesh.rotation.x = -Math.PI / 2;
                     floorMesh.position.y = floorOffset - 1;
                 });
 
 
-                // Other building 1
+                // Tall building
                 var building1 = [],
-                    building1ExtensionHeight = 200;
+                    building1Height = 400;
 
-                // short 'n' squat
-                var building1Coords = {
-                    x: 300,
-                    z: -200
-                }
                 building1.push(Building.call(world, {
                     width: 200,
-                    height: 100,
+                    height: building1Height,
                     depth: 100,
-                    x: building1Coords.x,
-                    z: building1Coords.z,
+                    x: 300,
+                    z: -200,
                     color: '#ccc'
                 }));
-                // tall extension
-                building1.push(Building.call(world, {
-                    x: building1Coords.x + 50,
-                    z: building1Coords.z + 100,
-                    width: 100,
-                    height: building1ExtensionHeight,
-                    depth: 100,
-                    color: '#ccc'
-                }));
-                // cap the tall one off
-                var building1Part3 = world.mesh(Box(108, 12, 108), Material('lambert', '#ccc'));
-                building1Part3.x(building1Coords.x + 50).y(building1ExtensionHeight + 4).z(building1Coords.z + 100);
-                building1.push(building1Part3);
+
+                // Group of neighboring buildings
+                var neighbor = [],
+                    building2Material = Material('#b97'),
+                    building2_1 = world.mesh(
+                        Box(60, 30, 20),
+                        building2Material
+                    ).x(140),
+                    building2_2 = world.mesh(
+                        Box(20, 30, 40),
+                        building2Material
+                    ).x(160).z(-30),
+                    building2_3 = world.mesh(
+                        Box(40, 15, 40),
+                        Material('#666')
+                    ).x(130).z(-30);
+                neighbor.push(building2_1);
+                neighbor.push(building2_2);
+                neighbor.push(building2_3);
+
+                function shapeFromPlan(plan) {
+                    var thePlan = new THREE.Shape();
+                    // start it up
+                    thePlan.moveTo(plan[0][0], plan[0][1]);
+                    plan.forEach(function(pt, j) {
+
+                        if ( j > 0 ) thePlan.lineTo(pt[0], pt[1]);
+
+                    });
+                    // close it off
+                    thePlan.lineTo(plan[0][0], plan[0][1]);
+                    return thePlan;
+                }
+
+                var building3plan = [
+                    [0, 0],
+                    [25, 0],
+                    [25, 40],
+                    [0, 30]
+                ];
+                var building3 = world.mesh(
+                        new THREE.ExtrudeGeometry(shapeFromPlan(building3plan), {
+                            amount: 25,
+                            bevelSegments: 0
+                        }),
+                        Material('#943')
+                    ),
+                    building3Roof = world.mesh(
+                        new THREE.ExtrudeGeometry(shapeFromPlan(building3plan), {
+                            amount: 2,
+                            bevelSegments: 0
+                        }),
+                        Material('#eee')
+                    );
+                building3.position.x = 100;
+                building3Roof.position.x = 100;
+                building3.position.z = -60;
+                building3Roof.position.z = -60;
+                building3.rotation.x = -Math.PI / 2;
+                building3Roof.rotation.x = -Math.PI / 2;
+                building3.position.y = 0;
+                building3Roof.position.y = 24;
+
+                neighbor.push(building3);
+                neighbor.push(building3Roof);
+
+                neighbor.forEach(function(obj) {
+                    obj.position.y -= 1;
+                    obj.exclude = true;
+                });
 
                 function rotateAroundYAxis(obj, deg) {
 
@@ -175,9 +241,9 @@
                     rotateAroundYAxis(part, 210);
                 });
 
-
                 // GROUND PLANE
                 var plane = world.mesh(Box(100000, 1, 100000), Material('lambert', '#999')).y(-1);
+                plane.exclude = true;
 
                 var light = world.light();
                 light.target = building1[0];
@@ -226,7 +292,55 @@
                 animate();
             }
 
+            var raycaster = new THREE.Raycaster(),
+                mouse = new THREE.Vector2();
+
+            var intersects = [];
+
             function render() {
+
+                if ( raycaster ) {
+                    raycaster.setFromCamera( mouse, camera );
+
+                    intersects.forEach(function(intersect) {
+                        if ( intersect.object && intersect.object.oldColor ) {
+                            intersect.object.material.color = intersect.object.oldColor;
+                        }
+                    });
+                    intersects = [];
+
+                    // calculate objects intersecting the picking ray
+                    raycaster.intersectObjects( scene.children ).forEach(function(intersect) {
+                        intersects.push(intersect);
+                    });
+
+                    var closest = Infinity,
+                        closestObj;
+                    intersects.forEach(function(intersect) {
+                        if ( intersect.distance < closest ) {
+                            closest = intersect.distance;
+                            closestObj = intersect;
+                        }
+                    });
+
+                    var hypotenuse = Math.sqrt(camera.x() * camera.x() + camera.z() * camera.z());
+
+                    if ( !closestObj.object.exclude ) {
+
+                        var oldColor;
+                        if ( closestObj.object && !closestObj.object.exclude ) {
+                            oldColor = closestObj.object.oldColor || closestObj.object.material.color;
+                            if ( oldColor ) {
+                                closestObj.object.oldColor = oldColor;
+                                closestObj.object.material.color = new THREE.Color( 0.666 * (1 + oldColor.r), 0.666 * (1 + oldColor.g), 0.666 * (1 + oldColor.b) );
+                            }
+                        }
+
+                        closestObj.object.position.x -= camera.x() / hypotenuse;
+                        closestObj.object.position.z -= camera.z() / hypotenuse;
+                    }
+                }
+
                 renderer.render(scene, camera);
             }
 
@@ -241,6 +355,8 @@
 			}
 
             function uploadSnapshot() {
+                var canvas = document.getElementsByTagName('canvas')[0];
+
                 var url = 'http://gentle-stream-4461.herokuapp.com/upload/',
                     canvas = document.getElementsByTagName('canvas')[0],
                     dataURL = canvas.toDataURL().split(',')[1],
@@ -253,11 +369,39 @@
                 };
                 xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
                 xhr.send(data);
+
+                canvas.classList.add('faded');
+                setTimeout(function(){
+                    canvas.classList.remove('faded');
+                }, 350);
             };
 
             window.addEventListener('keydown', function(e) {
-                if ( e.keyCode === 32 ) uploadSnapshot();
+                if ( e.keyCode === 13 ) uploadSnapshot();
             });
+
+
+
+            // ----- RAYCASTER
+
+            function onMouseMove( event ) {
+
+            	// calculate mouse position in normalized device coordinates
+            	// (-1 to +1) for both components
+
+            	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1
+            	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1
+
+                if ( raycaster ) {
+
+                }
+
+                render();
+            }
+
+            window.addEventListener( 'mousemove', onMouseMove, false );
+
+            window.requestAnimationFrame(render);
 
         })();
     </script>

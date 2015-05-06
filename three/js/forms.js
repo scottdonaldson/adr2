@@ -79,19 +79,22 @@
         texture.anisotropy = this.renderer.getMaxAnisotropy();
 		texture.needsUpdate = true;
 
-        var cube = this.mesh( geometry, Material('lambert', {
+        var box = this.mesh( geometry, Material('lambert', {
             color: color,
             map: texture,
             vertexColors: THREE.VertexColors
         }));
 
-        cube.position.x = x;
-        cube.position.y = y + height / 2;
-        cube.position.z = z;
+        box.position.x = x;
+        box.position.y = y + height / 2;
+        box.position.z = z;
 
-        this.scene.add(cube);
+        box.exclude = true;
+        console.log(box);
 
-        return cube;
+        this.scene.add(box);
+
+        return box;
     }
 
     Building.generateTexture = generateTexture;

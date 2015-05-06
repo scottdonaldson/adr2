@@ -63,6 +63,7 @@ Shape = function() {
 
 Box = function(x, y, z) {
     var box = new THREE.BoxGeometry(x, y, z);
+    box.height = y;
     return box;
 }
 
@@ -91,7 +92,7 @@ Material = function(type, attrs) {
         }
         theType = type;
     // if type is not one of the allowed materials, assume it's a color
-    } else if ( type === 'string' ) {
+    } else if ( typeof type === 'string' ) {
         attrs = { color: type };
     // default to white
     } else {
@@ -109,16 +110,17 @@ T.prototype.mesh = function(geo, material) {
         y,
         highest, lowest;
 
-    if ( geo.parameters && geo.parameters.height ) {
-        height = geo.parameters.height;
-    } else {
-        yVertices = geo.vertices.map(function(vertex) {
-            return vertex.y;
-        });
-        highest = Math.max.apply(null, yVertices);
-        lowest = Math.min.apply(null, yVertices);
-        height = highest - lowest;
-    }
+    /* if ( geo.height ) {
+        height = geo.height;
+    } */
+
+    yVertices = geo.vertices.map(function(vertex) {
+        return vertex.y;
+    });
+    highest = Math.max.apply(null, yVertices);
+    lowest = Math.min.apply(null, yVertices);
+    height = highest - lowest;
+
 
     // set base of mesh at xz plane
     mesh.translateY(height / 2);

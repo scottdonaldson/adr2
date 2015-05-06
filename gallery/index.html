@@ -15,7 +15,7 @@
             display: flex;
             flex-wrap: wrap;
             margin: 2em auto;
-            width: 80%;
+            width: 88%;
         }
 
         #modal {
@@ -125,6 +125,8 @@
             modal.innerHTML = '';
             modal.appendChild(img);
             document.body.classList.add('modal-active');
+
+            activeDiv = this;
         }
 
         function closeModal() {
@@ -133,11 +135,19 @@
 
         window.addEventListener('keydown', function(e) {
             if (e.keyCode === 27) closeModal();
-        })
+
+            if ( activeDiv && activeDiv.previousSibling && e.keyCode === 37 ) {
+                showModal.bind(activeDiv.previousSibling)();
+            }
+            if ( activeDiv && activeDiv.nextSibling && e.keyCode === 39 ) {
+                showModal.bind(activeDiv.nextSibling)();
+            }
+        });
         modal.addEventListener('click', closeModal);
 
         var f = new Firebase('https://adr2.firebaseio.com/'),
-            content = document.getElementById('content');
+            content = document.getElementById('content'),
+            activeDiv;
 
         f.on('child_added', function(data) {
 
