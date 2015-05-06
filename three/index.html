@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Three</title>
+    <title>ADR2</title>
 
     <style>
         html, body { margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            position: relative;
+        }
         canvas {
             position: fixed;
             top: 0;
@@ -15,6 +19,28 @@
 
         .faded {
             opacity: 0;
+        }
+
+        #controls {
+            background: #fff;
+            border-top: 1px solid #999;
+            bottom: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            width: 100%;
+            padding: 1em;
+            position: fixed;
+            text-align: center;
+        }
+
+        .monospace {
+            font-family: Monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+            padding-left: 2em;
+        }
+
+        .monospace:first-child {
+            padding-left: 0;
         }
     </style>
 
@@ -59,11 +85,20 @@
 </head>
 <body>
     <div id="container"></div>
+    <div id="controls">
+        <span class="monospace">Left Mouse</span>&nbsp;-&nbsp;Orbit
+        <span class="monospace">Right Mouse</span>&nbsp;-&nbsp;Pan
+        <span class="monospace">Enter</span>&nbsp;-&nbsp;Take Screenshot
+        <span class="monospace">Space Bar</span>&nbsp;-&nbsp;Time Goes By
+    </div>
     <script>
 
         (function(){
 
             var world, camera, controls, scene, renderer;
+
+            // going to increment this
+            var light, lightTarget;
 
             init();
             render();
@@ -75,7 +110,7 @@
 
             function init() {
 
-                world = new T();
+                world = new T('container');
 
                 camera = world.camera;
                 camera.position.x = -1000;
@@ -137,6 +172,21 @@
                     floorMesh.position.y = floorOffset - 1;
                 });
 
+                function rotateAroundYAxis(obj, deg) {
+
+                    var x = obj.position.x,
+                        z = obj.position.z,
+                        hypotenuse = Math.sqrt(x * x + z * z);
+
+                    var curAngle = Math.atan( x / z ) * 180 / Math.PI,
+                        newAngle = curAngle + deg;
+
+                    newAngle = newAngle * Math.PI / 180;
+
+                    obj.position.x = hypotenuse * Math.sin(newAngle);
+                    obj.position.z = hypotenuse * Math.cos(newAngle);
+                    obj.rotation.y += deg * Math.PI / 180;
+                }
 
                 // Tall building
                 var building1 = [],
@@ -150,6 +200,58 @@
                     z: -200,
                     color: '#ccc'
                 }));
+
+                building1.forEach(function(part) {
+                    rotateAroundYAxis(part, 210);
+                });
+
+                var citibank = Building.call(world, {
+                    width: 150,
+                    height: 550,
+                    depth: 150,
+                    color: '#ccf',
+                    x: -400,
+                    z: -200
+                });
+                for ( var topper = 0; topper < 5; topper++ ) {
+                    world.mesh(
+                        Box(150 - (topper + 1) * 20, 15, 150 - (topper + 1) * 20),
+                        Material('#bbe')
+                    ).x(-400).y(550 + 7.5 + topper * 15).z(-200).exclude = true;
+                }
+                lightTarget = citibank;
+
+                var cunyFootprint = new THREE.Shape();
+                cunyFootprint.moveTo(100, 100);
+                cunyFootprint.bezierCurveTo(
+                    100, 10,
+                    10, 0,
+                    0, 0
+                );
+                cunyFootprint.lineTo(-20, 0);
+                cunyFootprint.lineTo(-20, 100);
+                cunyFootprint.lineTo(100, 100);
+                var cunyGeo = new THREE.ExtrudeGeometry(cunyFootprint, {
+                    amount: 120,
+                    bevelSegments: 0
+                });
+                var cuny = world.mesh(cunyGeo, Material('#aab'));
+                cuny.exclude = true;
+                cuny.rotation.x = -Math.PI / 2;
+                cuny.position.x = -200;
+                cuny.position.z = -200;
+                cuny.position.y = -1;
+
+                var cuny2 = world.mesh(cunyGeo, Material('#aab'));
+                cuny2.exclude = true;
+                cuny2.scale.x = 0.75;
+                cuny2.scale.y = 0.75;
+                cuny2.scale.z = 0.5;
+                cuny2.rotation.x = -Math.PI / 2;
+                cuny2.position.x = -206;
+                cuny2.position.z = -226;
+                cuny2.position.y = 119;
+
 
                 // Group of neighboring buildings
                 var neighbor = [],
@@ -221,36 +323,19 @@
                     obj.exclude = true;
                 });
 
-                function rotateAroundYAxis(obj, deg) {
-
-                    var x = obj.position.x,
-                        z = obj.position.z,
-                        hypotenuse = Math.sqrt(x * x + z * z);
-
-                    var curAngle = Math.atan( x / z ) * 180 / Math.PI,
-                        newAngle = curAngle + deg;
-
-                    newAngle = newAngle * Math.PI / 180;
-
-                    obj.position.x = hypotenuse * Math.sin(newAngle);
-                    obj.position.z = hypotenuse * Math.cos(newAngle);
-                    obj.rotation.y += deg * Math.PI / 180;
-                }
-
-                building1.forEach(function(part) {
-                    rotateAroundYAxis(part, 210);
-                });
-
                 // GROUND PLANE
-                var plane = world.mesh(Box(100000, 1, 100000), Material('lambert', '#999')).y(-1);
+                var plane = world.mesh(Box(100000, 1, 100000), Material('lambert', '#777')).y(-1);
                 plane.exclude = true;
 
-                var light = world.light();
-                light.target = building1[0];
-                light.position.set(1000, 2500, 2000);
+                light = world.light();
+                light.target = lightTarget;
+                var lightX = -500,
+                    lightY = 2500,
+                    lightZ = 2000;
+                light.position.set(lightX, lightY, lightZ);
 
                 var light2 = world.light('#fff', 0.5, false);
-                light2.target = building1[0];
+                light2.target = lightTarget;
                 light2.position.set(-2000, 2500, -1000);
 
                 var hemiLight = new THREE.HemisphereLight( '#57f', '#000', 0.15 );
@@ -376,8 +461,18 @@
                 }, 350);
             };
 
+            function timeGoesBy() {
+                light.position.z -= 25;
+                light.position.set(light.position.x, light.position.y, light.position.z);
+                light.target = lightTarget;
+                render();
+            }
+
             window.addEventListener('keydown', function(e) {
+                // enter
                 if ( e.keyCode === 13 ) uploadSnapshot();
+                // space bar
+                if ( e.keyCode === 32 ) timeGoesBy();
             });
 
 

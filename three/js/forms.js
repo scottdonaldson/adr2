@@ -2,6 +2,8 @@
 
     function generateTexture(height) {
 
+        var floorHeight = 13;
+
     	var canvas = document.createElement( 'canvas' );
     	canvas.width = 32;
     	canvas.height = height || 100;
@@ -10,13 +12,13 @@
     	context.fillStyle = '#ffffff';
     	context.fillRect( 0, 0, 32, height );
 
-    	for ( var y = 10; y < height; y += 10 ) {
+    	for ( var y = floorHeight; y < height - floorHeight; y += floorHeight ) {
 
     		for ( var x = 0; x < 32; x += 1 ) {
 
     			var value = Math.floor( Math.random() * 255 / 3 );
     			context.fillStyle = 'rgb(' + [ value, value, value ].join( ',' )  + ')';
-    			context.fillRect( x, y, 1, 10 / 2 );
+    			context.fillRect( x, y, 1, floorHeight / 2 );
     		}
     	}
 
@@ -90,7 +92,6 @@
         box.position.z = z;
 
         box.exclude = true;
-        console.log(box);
 
         this.scene.add(box);
 

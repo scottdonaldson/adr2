@@ -1,4 +1,4 @@
-T = function() {
+T = function(id) {
 
     var scene, camera, renderer;
 
@@ -26,7 +26,11 @@ T = function() {
     scene.add(camera);
 
     renderer.setSize(WIDTH, HEIGHT);
-    document.body.appendChild(renderer.domElement);
+    if ( id ) {
+        document.getElementById(id).appendChild(renderer.domElement);
+    } else {
+        document.body.appendChild(renderer.domElement);
+    }
 
     this.scene = scene;
     this.camera = normalize(camera);
@@ -110,10 +114,6 @@ T.prototype.mesh = function(geo, material) {
         y,
         highest, lowest;
 
-    /* if ( geo.height ) {
-        height = geo.height;
-    } */
-
     yVertices = geo.vertices.map(function(vertex) {
         return vertex.y;
     });
@@ -127,11 +127,16 @@ T.prototype.mesh = function(geo, material) {
     return mesh;
 };
 
-T.prototype.light = function(color, intensity, shadows) {
+T.prototype.light = function(color, intensity, shadows, debug) {
     var light = new THREE.DirectionalLight(color || '#fff', intensity || 1);
     if ( shadows !== false ) {
         light.castShadow = true;
         light.shadowMapWidth = light.shadowMapHeight = 2048;
+        light.shadowCameraLeft = -1000;
+        light.shadowCameraRight = 1000;
+        light.shadowCameraBottom = -1000;
+        light.shadowCameraTop = 1000;
+        if ( debug ) light.shadowCameraVisible = true;
     }
     this.scene.add(light);
     return normalize(light);
