@@ -188,13 +188,14 @@
 				scene.add( grid );
                 grid.position.y = 3;
 
-                gridPlane = world.mesh(Box(1000, 1, 1000), Material('#bbb'));
+                gridPlane = world.mesh(Box(1000, 1, 1000));
+                gridPlane.visible = false;
                 gridPlane.y(0);
                 objects.push(gridPlane);
                 lightTarget = gridPlane;
 
                 // GROUND PLANE
-                var plane = world.mesh(Box(100000, 1, 100000), Material('lambert', '#777')).y(-2);
+                var plane = world.mesh(Box(100000, 1, 100000), Material('lambert', '#888')).y(-2);
                 plane.exclude = true;
 
                 light = world.light();
